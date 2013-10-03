@@ -3,6 +3,7 @@
 package s3cache
 
 import (
+	"compress/gzip"
 	"crypto/md5"
 	"encoding/hex"
 	"github.com/sqs/s3"
@@ -22,6 +23,11 @@ type Cache struct {
 	// bucket name and the AWS region. Example:
 	// "https://s3-us-west-2.amazonaws.com/mybucket".
 	BucketURL string
+
+	// Gzip indicates whether cache entries should be gzipped in Set and
+	// gunzipped in Get. If true, cache entry keys will have the suffix ".gz"
+	// appended.
+	Gzip bool
 }
 
 func (c *Cache) Get(key string) (resp []byte, ok bool) {
@@ -30,6 +36,13 @@ func (c *Cache) Get(key string) (resp []byte, ok bool) {
 		return []byte{}, false
 	}
 	defer rdr.Close()
+	if c.Gzip {
+		rdr, err = gzip.NewReader(rdr)
+		if err != nil {
+			return nil, false
+		}
+		defer rdr.Close()
+	}
 	resp, err = ioutil.ReadAll(rdr)
 	return resp, err == nil
 }
@@ -39,8 +52,12 @@ func (c *Cache) Set(key string, resp []byte) {
 	if err != nil {
 		return
 	}
-	w.Write(resp)
 	defer w.Close()
+	if c.Gzip {
+		w = gzip.NewWriter(w)
+		defer w.Close()
+	}
+	w.Write(resp)
 }
 
 func (c *Cache) Delete(key string) {
@@ -53,6 +70,9 @@ func (c *Cache) Delete(key string) {
 
 func (c *Cache) url(key string) string {
 	key = cacheKeyToObjectKey(key)
+	if c.Gzip {
+		key += ".gz"
+	}
 	if strings.HasSuffix(c.BucketURL, "/") {
 		return c.BucketURL + key
 	}
