@@ -10,6 +10,7 @@ import (
 	"github.com/sqs/s3/s3util"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 )
@@ -44,12 +45,16 @@ func (c *Cache) Get(key string) (resp []byte, ok bool) {
 		defer rdr.Close()
 	}
 	resp, err = ioutil.ReadAll(rdr)
+	if err != nil {
+		log.Printf("s3cache.Get failed: %s", err)
+	}
 	return resp, err == nil
 }
 
 func (c *Cache) Set(key string, resp []byte) {
 	w, err := s3util.Create(c.url(key), nil, &c.Config)
 	if err != nil {
+		log.Printf("s3util.Create failed: %s", err)
 		return
 	}
 	defer w.Close()
@@ -57,12 +62,16 @@ func (c *Cache) Set(key string, resp []byte) {
 		w = gzip.NewWriter(w)
 		defer w.Close()
 	}
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		log.Printf("s3cache.Set failed: %s", err)
+	}
 }
 
 func (c *Cache) Delete(key string) {
 	rdr, err := s3util.Delete(c.url(key), &c.Config)
 	if err != nil {
+		log.Printf("s3cache.Delete failed: %s", err)
 		return
 	}
 	defer rdr.Close()
