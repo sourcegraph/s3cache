@@ -6,13 +6,14 @@ import (
 	"compress/gzip"
 	"crypto/md5"
 	"encoding/hex"
-	"github.com/sqs/s3"
-	"github.com/sqs/s3/s3util"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/sqs/s3"
+	"github.com/sqs/s3/s3util"
 )
 
 // Cache objects store and retrieve data using Amazon S3.
@@ -98,15 +99,15 @@ func cacheKeyToObjectKey(key string) string {
 // is the full URL to the bucket on Amazon S3, including the bucket name and AWS
 // region (e.g., "https://s3-us-west-2.amazonaws.com/mybucket").
 //
-// The environment variables S3_ACCESS_KEY and S3_SECRET_KEY are used as the AWS
+// The environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_KEY are used as the AWS
 // credentials. To use different credentials, modify the returned Cache object
 // or construct a Cache object manually.
 func New(bucketURL string) *Cache {
 	return &Cache{
 		Config: s3util.Config{
 			Keys: &s3.Keys{
-				AccessKey: os.Getenv("S3_ACCESS_KEY"),
-				SecretKey: os.Getenv("S3_SECRET_KEY"),
+				AccessKey: os.Getenv("AWS_ACCESS_KEY_ID"),
+				SecretKey: os.Getenv("AWS_SECRET_KEY"),
 			},
 			Service: s3.DefaultService,
 		},
