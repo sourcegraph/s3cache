@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/sqs/s3"
@@ -32,6 +33,8 @@ type Cache struct {
 	Gzip bool
 }
 
+var noLogErrors, _ = strconv.ParseBool(os.Getenv("NO_LOG_S3CACHE_ERRORS"))
+
 func (c *Cache) Get(key string) (resp []byte, ok bool) {
 	rdr, err := s3util.Open(c.url(key), &c.Config)
 	if err != nil {
@@ -47,7 +50,9 @@ func (c *Cache) Get(key string) (resp []byte, ok bool) {
 	}
 	resp, err = ioutil.ReadAll(rdr)
 	if err != nil {
-		log.Printf("s3cache.Get failed: %s", err)
+		if !noLogErrors {
+			log.Printf("s3cache.Get failed: %s", err)
+		}
 	}
 	return resp, err == nil
 }
@@ -55,7 +60,9 @@ func (c *Cache) Get(key string) (resp []byte, ok bool) {
 func (c *Cache) Set(key string, resp []byte) {
 	w, err := s3util.Create(c.url(key), nil, &c.Config)
 	if err != nil {
-		log.Printf("s3util.Create failed: %s", err)
+		if !noLogErrors {
+			log.Printf("s3util.Create failed: %s", err)
+		}
 		return
 	}
 	defer w.Close()
@@ -65,14 +72,18 @@ func (c *Cache) Set(key string, resp []byte) {
 	}
 	_, err = w.Write(resp)
 	if err != nil {
-		log.Printf("s3cache.Set failed: %s", err)
+		if !noLogErrors {
+			log.Printf("s3cache.Set failed: %s", err)
+		}
 	}
 }
 
 func (c *Cache) Delete(key string) {
 	rdr, err := s3util.Delete(c.url(key), &c.Config)
 	if err != nil {
-		log.Printf("s3cache.Delete failed: %s", err)
+		if !noLogErrors {
+			log.Printf("s3cache.Delete failed: %s", err)
+		}
 		return
 	}
 	defer rdr.Close()
