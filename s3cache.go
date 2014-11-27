@@ -1,6 +1,6 @@
 // Package s3cache provides an implementation of httpcache.Cache that stores and
 // retrieves data using Amazon S3.
-package s3cache
+package s3cache // import "sourcegraph.com/sourcegraph/s3cache"
 
 import (
 	"compress/gzip"
